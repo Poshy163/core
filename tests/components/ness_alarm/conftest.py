@@ -11,55 +11,26 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from tests.common import MockConfigEntry
 
 
-class MockClient:
-    """Mock nessclient.Client stub."""
-
-    async def panic(self, code):
-        """Handle panic."""
-
-    async def disarm(self, code):
-        """Handle disarm."""
-
-    async def arm_away(self, code):
-        """Handle arm_away."""
-
-    async def arm_home(self, code):
-        """Handle arm_home."""
-
-    async def aux(self, output_id, state):
-        """Handle auxiliary control."""
-
-    async def keepalive(self):
-        """Handle keepalive."""
-
-    async def update(self):
-        """Handle update."""
-
-    def on_zone_change(self):
-        """Handle on_zone_change."""
-
-    def on_state_change(self):
-        """Handle on_state_change."""
-
-    async def close(self):
-        """Handle close."""
-
-
 @pytest.fixture
-def mock_nessclient():
+def mock_nessclient() -> Generator[MagicMock]:
     """Mock the nessclient Client constructor.
 
-    Replaces nessclient.Client with a Mock which always returns the same
-    MagicMock() instance.
+    Replaces nessclient.Client with a MagicMock whose return value
+    has AsyncMock methods matching the real Client interface.
     """
-    _mock_instance = MagicMock(MockClient())
-    _mock_factory = MagicMock()
-    _mock_factory.return_value = _mock_instance
-
-    with patch(
-        "homeassistant.components.ness_alarm.Client", new=_mock_factory, create=True
-    ):
-        yield _mock_instance
+    with patch("homeassistant.components.ness_alarm.Client", autospec=True) as mock_cls:
+        client = mock_cls.return_value
+        client.panic = AsyncMock()
+        client.disarm = AsyncMock()
+        client.arm_away = AsyncMock()
+        client.arm_home = AsyncMock()
+        client.aux = AsyncMock()
+        client.keepalive = AsyncMock()
+        client.update = AsyncMock()
+        client.close = AsyncMock()
+        client.on_zone_change = MagicMock()
+        client.on_state_change = MagicMock()
+        yield client
 
 
 @pytest.fixture
